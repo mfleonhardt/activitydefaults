@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<info>
+    <id>activitydefaults</id>
+    <name>Activity Defaults</name>
+    <description>Administration utility to allow customizable defaults for activity notifications for new users.</description>
+    <licence>AGPL</licence>
+    <author>Matt Leonhardt</author>
+    <version>0.0.1</version>
+    <namespace>ActivityDefaults</namespace>
+    <category>other</category>
+    <dependencies>
+        <owncloud min-version="8" />
+    </dependencies>
+</info>
