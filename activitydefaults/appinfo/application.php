@@ -53,7 +53,7 @@ class Application extends App
          */
         $container->registerService('AppSettings', 
             function (IContainer $c) {
-                return new AppSettings($server->getActivityManager(), OC::$server->getConfig(), 
+                return new AppSettings(\OC::$server->getActivityManager(), \OC::$server->getConfig(), 
                     $c->query('ActivityData'));
             });
         
@@ -63,13 +63,13 @@ class Application extends App
         $container->registerService('SettingsController', 
             function (IContainer $c) {
                 return new SettingsController($c->query('AppName'), $c->query('Request'), $c->query('ActivityData'), 
-                    $c->query('ActivityL10N'), $c->query('AppSettings'), OC::$server->getConfig());
+                    $c->query('ActivityL10N'), $c->query('AppSettings'), \OC::$server->getConfig());
                 ;
             });
         
         $container->registerService('AppHooks', 
             function (IContainer $c) {
-                return new AppHooks(OC::$server->getConfig());
+                return new AppHooks(\OC::$server->getConfig());
             });
     }
 }
