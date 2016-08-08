@@ -9,6 +9,6 @@
     <namespace>ActivityDefaults</namespace>
     <category>other</category>
     <dependencies>
-        <owncloud min-version="8.2" max-version="9.0"/>
+        <owncloud min-version="8.2" max-version="9.1"/>
     </dependencies>
 </info>

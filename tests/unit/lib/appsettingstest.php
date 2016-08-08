@@ -14,7 +14,6 @@ namespace OCA\ActivityDefaults\Tests;
 
 use OCA\ActivityDefaults\AppSettings;
 use OCP\Activity\IExtension;
-use OCP\DB\QueryBuilder\IExpressionBuilder;
 
 /**
  * @group DB
@@ -25,7 +24,6 @@ class AppSettingsTest extends TestCase
     /** @var \PHPUnit_Framework_MockObject_MockObject */
     protected $manager;
 
-    /** @var \PHPUnit_Framework_MockObject_MockObject */
     protected $config;
 
     /** @var \PHPUnit_Framework_MockObject_MockObject */
@@ -39,12 +37,16 @@ class AppSettingsTest extends TestCase
         parent::setUp();
         
         $this->manager = $this->getMock('OCP\Activity\IManager');
-        $this->config = $this->getMock('OCP\IConfig');
+        $this->config = \OC::$server->getConfig();
         $this->data = $this->getMockBuilder('OCA\Activity\Data')
             ->disableOriginalConstructor()
             ->getMock();
         
-        $this->settings = new AppSettings($this->manager, $this->config, $this->data);
+        $this->settings = new AppSettings(
+        	\OC::$server->getActivityManager(),
+			\OC::$server->getConfig(),
+			$this->data
+		);
     }
     
     public function defaultData()
@@ -53,7 +55,7 @@ class AppSettingsTest extends TestCase
             array('setting', 'batchtime', self::HOURLY),
             array('setting', 'self', true),
             array('setting', 'selfemail', false),
-            array(IExtension::METHOD_MAIL, 'mail_default', true),
+            array(IExtension::METHOD_MAIL, 'mail_default', false),
             array(IExtension::METHOD_MAIL, 'stream_default', false)
         );
     }
@@ -73,4 +75,22 @@ class AppSettingsTest extends TestCase
         
         $this->assertEquals($expectation, $this->settings->getDefaultSetting($method, $type));
     }
+
+	/**
+	 * @dataProvider defaultData
+	 * @param $method
+	 * @param $type
+	 */
+    public function testGetDefaultAppSetting($method, $type) {
+    	$this->assertEquals(
+    		$this->settings->getDefaultSetting($method, $type),
+			$this->settings->getAppSetting($method, $type)
+		);
+	}
+
+	public function testGetCustomAppSetting() {
+		$this->c->setAppValue('activitydefaults', 'notify_setting_selfemail', true);
+		$this->assertTrue($this->settings->getAppSetting('setting', 'selfemail'));
+	}
+
 }
