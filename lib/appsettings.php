@@ -62,18 +62,17 @@ class AppSettings
         $this->data = $data;
     }
 
-    /**
-     * Get a setting for a user
-     *
-     * Falls back to some good default values if the user does not have a preference
-     *
-     * @param string $user            
-     * @param string $method
-     *            Should be one of 'stream', 'email' or 'setting'
-     * @param string $type
-     *            One of the activity types, 'batchtime' or 'self'
-     * @return mixed
-     */
+	/**
+	 * Get a setting for a user
+	 *
+	 * Falls back to some good default values if the user does not have a preference
+	 *
+	 * @param string $method
+	 *            Should be one of 'stream', 'email' or 'setting'
+	 * @param string $type
+	 *            One of the activity types, 'batchtime' or 'self'
+	 * @return mixed
+	 */
     public function getAppSetting($method, $type)
     {
         return $this->config->getAppValue('activitydefaults', 'notify_' . $method . '_' . $type, 

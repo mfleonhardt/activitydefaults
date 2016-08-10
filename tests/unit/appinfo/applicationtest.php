@@ -14,6 +14,7 @@ namespace OCA\ActivityDefaults\Tests\AppInfo;
 
 use OCA\ActivityDefaults\AppInfo\Application;
 use OCA\ActivityDefaults\Tests\TestCase;
+use OCP\AppFramework\IAppContainer;
 
 /**
  * @group DB
@@ -24,7 +25,7 @@ class ApplicationTest extends TestCase
     /** @var \OCA\ActivityDefaults\AppInfo\Application **/
     protected $app;
 
-    /** @var \OCP\Icontainer **/
+	/** @var  IAppContainer */
     protected $container;
 
     protected function setUp()
@@ -45,10 +46,6 @@ class ApplicationTest extends TestCase
             array(
                 'ActivityData',
                 'OCA\Activity\Data'
-            ),
-            array(
-                'ActivityL10N',
-                'OCP\IL10N'
             ),
             array(
                 'AppSettings',
