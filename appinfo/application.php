@@ -32,42 +32,44 @@ class Application extends App
 
     /**
      *
-     * @param array $urlParams            
+     * @param array $urlParams
      */
     public function __construct(array $urlParams = array())
     {
         parent::__construct('activitydefaults', $urlParams);
         $container = $this->getContainer();
-        
-        /**
-         * TODO: Is there a way to inject the Activity Application? *
-         */
-        $activity = new \OCA\Activity\AppInfo\Application();
-        $aContainer = $activity->getContainer();
-        
-        $container->registerParameter('ActivityData', $aContainer->query('ActivityData'));
 
         /**
          * Services
          */
-        $container->registerService('AppSettings', 
-            function (IContainer $c) {
-                return new AppSettings(\OC::$server->getActivityManager(), \OC::$server->getConfig(), 
-                    $c->query('ActivityData'));
+        $container->registerService('AppSettings',
+            function () {
+                return new AppSettings(
+                    \OC::$server->getActivityManager(),
+                    \OC::$server->getConfig()
+                );
             });
-        
+
         /**
          * Controller
          */
-        $container->registerService('SettingsController', 
+        $container->registerService('SettingsController',
             function (IContainer $c) {
-                return new SettingsController($c->query('AppName'), $c->query('Request'), $c->query('ActivityData'), 
-                    \OC::$server->getL10N($c->query('AppName')), $c->query('AppSettings'), \OC::$server->getConfig());
+                return new SettingsController(
+                    $c->query('AppName'),
+                    $c->query('Request'),
+                    \OC::$server->getConfig(),
+                    \OC::$server->getSecureRandom(),
+                    \OC::$server->getURLGenerator(),
+                    \OC::$server->getActivityManager(),
+                    $c->query('AppSettings'),
+                    \OC::$server->getL10N($c->query('AppName'))
+                );
             });
-        
-        $container->registerService('AppHooks', 
+
+        $container->registerService('AppHooks',
             function () {
-                return new AppHooks(\OC::$server->getConfig());
+                return new AppHooks();
             });
     }
 }

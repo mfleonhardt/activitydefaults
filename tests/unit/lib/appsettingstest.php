@@ -36,7 +36,7 @@ class AppSettingsTest extends TestCase
     {
         parent::setUp();
         
-        $this->manager = $this->getMock('OCP\Activity\IManager');
+        $this->manager = $this->createMock('OCP\Activity\IManager');
         $this->config = \OC::$server->getConfig();
         $this->data = $this->getMockBuilder('OCA\Activity\Data')
             ->disableOriginalConstructor()
@@ -44,8 +44,7 @@ class AppSettingsTest extends TestCase
         
         $this->settings = new AppSettings(
         	\OC::$server->getActivityManager(),
-			\OC::$server->getConfig(),
-			$this->data
+			\OC::$server->getConfig()
 		);
     }
     

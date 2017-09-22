@@ -22,7 +22,6 @@
  */
 namespace OCA\ActivityDefaults;
 
-use OCA\Activity\Data;
 use OCP\Activity\IManager;
 use OCP\IConfig;
 
@@ -40,9 +39,6 @@ class AppSettings
     /** @var IConfig */
     protected $config;
 
-    /** @var Data */
-    protected $data;
-
     const EMAIL_SEND_HOURLY = 0;
 
     const EMAIL_SEND_DAILY = 1;
@@ -51,15 +47,12 @@ class AppSettings
 
     /**
      *
-     * @param IManager $manager            
-     * @param IConfig $config            
-     * @param Data $data            
+     * @param IManager $manager
+     * @param IConfig $config
      */
-    public function __construct(IManager $manager, IConfig $config, Data $data)
-    {
+    public function __construct(IManager $manager, IConfig $config) {
         $this->manager = $manager;
         $this->config = $config;
-        $this->data = $data;
     }
 
 	/**
@@ -75,7 +68,7 @@ class AppSettings
 	 */
     public function getAppSetting($method, $type)
     {
-        return $this->config->getAppValue('activitydefaults', 'notify_' . $method . '_' . $type, 
+        return $this->config->getAppValue('activitydefaults', 'notify_' . $method . '_' . $type,
             $this->getDefaultSetting($method, $type));
     }
 

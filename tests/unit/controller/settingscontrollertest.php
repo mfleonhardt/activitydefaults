@@ -12,16 +12,19 @@
  */
 namespace OCA\ActivityDefaults\Tests\Controller;
 
-use OC\AllConfig;
-use OC\AppFramework\Http\Request;
 use OC\L10N\L10N;
-use OCA\Activity\Data;
 use OCA\ActivityDefaults\AppSettings;
 use OCA\ActivityDefaults\Controller\SettingsController;
 use OCA\ActivityDefaults\Tests\TestCase;
 use OCP\Activity\IExtension;
+use OCP\Activity\IManager;
+use OCP\Activity\ISetting;
 use OCP\AppFramework\Http\DataResponse;
 use OCP\AppFramework\Http\TemplateResponse;
+use OCP\IConfig;
+use OCP\IRequest;
+use OCP\IURLGenerator;
+use OCP\Security\ISecureRandom;
 use OCP\Util;
 
 /**
@@ -29,19 +32,19 @@ use OCP\Util;
  */
 class SettingsControllerTest extends TestCase {
 
-	/** @var \PHPUnit_Framework_MockObject_MockObject */
+    /** @var \PHPUnit_Framework_MockObject_MockObject|IRequest */
 	protected $request;
-
-	/** @var \PHPUnit_Framework_MockObject_MockObject */
-	protected $data;
 
 	/** @var L10N */
 	protected $l10n;
 
-	/** @var \PHPUnit_Framework_MockObject_MockObject */
+    /** @var \PHPUnit_Framework_MockObject_MockObject|AppSettings */
 	protected $appSettings;
 
-	/** @var \PHPUnit_Framework_MockObject_MockObject */
+    /** @var  \PHPUnit_Framework_MockObject_MockObject|IManager */
+    protected $manager;
+
+    /** @var \PHPUnit_Framework_MockObject_MockObject|IConfig */
 	protected $config;
 
 	/** @var SettingsController */
@@ -76,12 +79,16 @@ class SettingsControllerTest extends TestCase {
 	 */
 	public function testAdmin($batchtime, $self, $selfemail) {
 		$testType = 'simple_desc';
+        $settings = [$testType => 'A simple notification type'];
 
-		$this->data->expects($this->any())
-			->method('getNotificationTypes')
-			->willReturn(array(
-				$testType => 'A simple notification type'
-			));
+        $this->manager->expects($this->any())
+            ->method('getNotificationTypes')
+            ->willReturn($settings);
+
+        $this->manager
+            ->expects($this->once())
+            ->method('getSettings')
+            ->willReturn($settings);
 
 		$this->request->expects($this->any())
 			->method('getParam')
@@ -154,39 +161,28 @@ class SettingsControllerTest extends TestCase {
 	 * @param int $batchtime
 	 */
 	public function testIndex($batchtime) {
-		$this->data->expects($this->any())
-			->method('getNotificationTypes')
-			->willReturn(
-				array(
-					'simple_desc' => 'A simple notification type',
-					'stream_only' => array(
-						'desc' => 'A stream-only notification type',
-						'methods' => array(
-							IExtension::METHOD_STREAM
-						)
-					),
-					'nested_desc' => array(
-						'desc' => 'A nested notification type'
-					),
-					'missing_desc' => array(
-						'methods' => array(
-							IExtension::METHOD_MAIL,
-							IExtension::METHOD_STREAM
-						)
-					)
-				));
 
-		$testParams = array(
-			'email' => array(
-				'simple_desc' => false,
-				'stream_only' => false,
-				'nested_desc' => true,
-				'missing_desc' => false
-			),
-			'stream' => array(
-				'simple_desc' => true,
-				'stream_only' => true,
-				'nested_desc' => true,
+	    $this->manager
+            ->expects($this->any())
+            ->method('getSettings')
+            ->willReturn([
+                $this->createSetting('simple_desc', 'A simple notification type'),
+                $this->createSetting('stream_only', 'A stream-only notification type', false),
+                $this->createSetting('email_only', 'An email-only notification type', true, false),
+                $this->createSetting('missing_desc', '')
+            ]);
+
+        $testParams = array(
+            'email' => array(
+                'simple_desc' => false,
+                'stream_only' => false,
+                'email_only' => true,
+                'missing_desc' => false
+            ),
+            'stream' => array(
+                'simple_desc' => true,
+                'stream_only' => true,
+                'email_only' => false,
 				'missing_desc' => false
 			),
 			'setting' => array(
@@ -206,22 +202,58 @@ class SettingsControllerTest extends TestCase {
 		$this->assertTemplateResponse($this->controller->index());
 	}
 
+    /**
+     * @param string $identifier
+     * @param string $name
+     * @param bool $canChangeStream
+     * @param bool $canChangeMail
+     * @return \PHPUnit_Framework_MockObject_MockObject|ISetting
+     */
+    protected function createSetting(
+        $identifier,
+        $name,
+        $canChangeStream = true,
+        $canChangeMail = true) {
+
+        $setting = $this->createMock(ISetting::class);
+        $setting
+            ->expects($this->any())
+            ->method('getIdentifier')
+            ->willReturn($identifier);
+        $setting
+            ->expects($this->any())
+            ->method('getName')
+            ->willReturn($name);
+        $setting
+            ->expects($this->any())
+            ->method('getPriority')
+            ->willReturn(50);
+        $setting
+            ->expects($this->any())
+            ->method('canChangeStream')
+            ->willReturn((bool) $canChangeStream);
+        $setting
+            ->expects($this->any())
+            ->method('canChangeMail')
+            ->willReturn((bool) $canChangeMail);
+
+        return $setting;
+    }
+
 	protected function assertTemplateResponse(TemplateResponse $response) {
 		// Validate template construction
 		$this->assertInstanceOf('OCP\AppFramework\Http\TemplateResponse', $response);
 		$this->assertEquals('blank', $response->getRenderAs());
 		$this->assertEquals('settings-admin', $response->getTemplateName());
 
-		/** @var Data $data */
-		$data = $this->data;
-		$types = $data->getNotificationTypes($this->l10n);
+        $settings = $this->manager->getSettings();
 
 		// Validate parameter construction
 		$params = $response->getParams();
 		$this->assertEquals(5, count($params));
 		$this->assertArrayHasKey('activities', $params);
 		$activities = $params['activities'];
-		$this->assertEquals(count($types), count($activities));
+        $this->assertEquals(count($settings), count($activities));
 		foreach ($activities as $activity) {
 			$this->assertArrayHasKey('desc', $activity);
 			$this->assertArrayHasKey(IExtension::METHOD_MAIL, $activity);
@@ -239,17 +271,20 @@ class SettingsControllerTest extends TestCase {
 		// Validate data
 		/** @var AppSettings $appSettings */
 		$appSettings = $this->appSettings;
-		foreach ($types as $type => $typeData) {
-			$this->assertArrayHasKey($type, $activities);
-			$activity = $activities[$type];
-			$desc = is_array($typeData) ? (isset($typeData['desc']) ? $typeData['desc'] : '') : $typeData;
-			$methods = is_array($typeData) && isset($typeData['methods']) ? $typeData['methods'] : [
-				IExtension::METHOD_STREAM,
-				IExtension::METHOD_MAIL
-			];
-			$this->assertEquals($desc, $activity['desc']);
-			$this->assertEquals($appSettings->getAppSetting('email', $type), $activity[IExtension::METHOD_MAIL]);
-			$this->assertEquals($appSettings->getAppSetting('stream', $type),
+        foreach ($settings as $setting) {
+            $this->assertArrayHasKey($setting->getIdentifier(), $activities);
+            $activity = $activities[$setting->getIdentifier()];
+            $desc = $setting->getName();
+            $methods = [];
+            if ($setting->canChangeStream()) {
+                $methods[] = IExtension::METHOD_STREAM;
+            }
+            if ($setting->canChangeMail()) {
+                $methods[] = IExtension::METHOD_MAIL;
+            }
+            $this->assertEquals($desc, $activity['desc']);
+            $this->assertEquals($appSettings->getAppSetting('email', $setting->getIdentifier()), $activity[IExtension::METHOD_MAIL]);
+            $this->assertEquals($appSettings->getAppSetting('stream', $setting->getIdentifier()),
 				$activity[IExtension::METHOD_STREAM]);
 			$this->assertEquals($methods, $activity['methods']);
 		}
@@ -263,26 +298,27 @@ class SettingsControllerTest extends TestCase {
 	protected function setUp() {
 		parent::setUp();
 
-		$this->request = $this->getMockBuilder(Request::class)
-			->disableOriginalConstructor()
-			->getMock();
+        $this->request = $this->createMock(IRequest::class);
+        $this->config = $this->createMock(IConfig::class);
+        $this->manager = $this->createMock(IManager::class);
+        $this->appSettings = $this->createMock(AppSettings::class);
 
-		$this->data = $this->getMockBuilder(Data::class)
-			->disableOriginalConstructor()
-			->getMock();
+        $this->l10n = Util::getL10N('activity', 'en');
 
-		$this->l10n = Util::getL10N('activity', 'en');
+        /** @var \PHPUnit_Framework_MockObject_MockObject|ISecureRandom $iSecureRandom */
+        $iSecureRandom = $this->createMock(ISecureRandom::class);
+        /** @var \PHPUnit_Framework_MockObject_MockObject|IURLGenerator $iUrlGenerator */
+        $iUrlGenerator = $this->createMock(IURLGenerator::class);
 
-		$this->appSettings = $this->getMockBuilder(AppSettings::class)
-			->disableOriginalConstructor()
-			->getMock();
-
-		$this->config = $this->getMockBuilder(AllConfig::class)
-			->disableOriginalConstructor()
-			->getMock();
-
-		$this->controller = new SettingsController('activitydefaults', $this->request, $this->data, $this->l10n,
-			$this->appSettings, $this->config);
-
-	}
+        $this->controller = new SettingsController(
+            'activitydefaults',
+            $this->request,
+            $this->config,
+            $iSecureRandom,
+            $iUrlGenerator,
+            $this->manager,
+            $this->appSettings,
+            $this->l10n
+        );
+    }
 }
