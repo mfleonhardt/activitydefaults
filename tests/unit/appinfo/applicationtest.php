@@ -44,10 +44,6 @@ class ApplicationTest extends TestCase
     {
         return array(
             array(
-                'ActivityData',
-                'OCA\Activity\Data'
-            ),
-            array(
                 'AppSettings',
                 'OCA\ActivityDefaults\AppSettings'
             ),

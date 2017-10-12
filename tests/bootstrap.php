@@ -10,14 +10,7 @@ require_once __DIR__.'/../../../lib/base.php';
 \OC::$loader->addValidRoot(OC::$SERVERROOT . '/tests');
 
 // Fix for "Autoload path not allowed: .../activity/tests/testcase.php"
+\OC_App::loadApp('activity');
 \OC_App::loadApp('activitydefaults');
-
-if(!class_exists('PHPUnit_Framework_TestCase')) {
-	require_once('PHPUnit/Autoload.php');
-}
-
-if (!class_exists('PHP_Token_Stream')) {
-    require_once('PHP/Token/Stream/Autoload.php');
-}
 
 OC_Hook::clear();
